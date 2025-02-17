@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-white;
+  }
+}
+
+@layer components {
+  .ottoman-frame {
+    @apply relative overflow-hidden;
+  }
+  
+  .ottoman-frame::after {
+    @apply content-[''] absolute inset-0 border-2 border-primary/50 pointer-events-none;
+  }
+
+  .actor-card {
+    @apply relative overflow-hidden rounded-lg transition-transform duration-300 ease-out;
+  }
+
+  .actor-card:hover {
+    @apply transform scale-105;
+  }
+
+  .actor-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent opacity-0 transition-opacity duration-300 flex flex-col justify-end p-4;
+  }
+
+  .actor-card:hover .actor-overlay {
+    @apply opacity-100;
+  }
+} 

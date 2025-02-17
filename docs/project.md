@@ -198,7 +198,7 @@ src/
 ### Installation
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/dizistars.git
+git clone https://github.com/yamanbaris/dizistars.git
 ```
 
 2. Install dependencies
@@ -225,7 +225,7 @@ npm run dev
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contact
-Project Link: [https://github.com/yourusername/dizistars](https://github.com/yourusername/dizistars)
+Project Link: [https://github.com/yamanbaris/dizistars](https://github.com/yamanbaris/dizistars)
 
 ## Acknowledgments
 - Next.js team for the amazing framework

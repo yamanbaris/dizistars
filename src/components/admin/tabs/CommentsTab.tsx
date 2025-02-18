@@ -2,15 +2,17 @@
 
 /* cSpell:words supabase sonner */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardCard from '../DashboardCard';
 import { 
   CheckCircleIcon,
   XCircleIcon,
-  MagnifyingGlassIcon 
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { getComments, updateComment } from '@/lib/database';
-import type { TableRow } from '@/lib/supabase';
+import type { TableRow } from '@/types/supabase';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -23,19 +25,19 @@ export default function CommentsTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [totalPages, setTotalPages] = useState(1);
 
   const loadComments = async () => {
     try {
       setLoading(true);
-      const { data, count } = await getComments(
-        undefined,
-        undefined,
-        currentPage,
-        10,
-        filter === 'all' ? undefined : filter
-      );
+      const { data, count } = await getComments({
+        page: currentPage,
+        pageSize: 10,
+        status: filter === 'all' ? undefined : filter
+      });
       setComments(data);
       setTotalComments(count);
+      setTotalPages(Math.ceil((count || 0) / 10));
     } catch (error) {
       console.error('Error loading comments:', error);
       toast.error('Failed to load comments');
@@ -51,7 +53,7 @@ export default function CommentsTab() {
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
     try {
       await updateComment(id, { status });
-      await loadComments();
+      setComments(prev => prev.filter(c => c.id !== id));
       toast.success(`Comment ${status}`);
     } catch (error) {
       console.error('Error updating comment:', error);
@@ -70,6 +72,14 @@ export default function CommentsTab() {
     }
     return true;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -113,7 +123,7 @@ export default function CommentsTab() {
                   Content
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Target
+                  Star
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Status
@@ -153,7 +163,7 @@ export default function CommentsTab() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                      {comment.target_type} #{comment.target_id}
+                      {comment.stars?.full_name || 'Unknown Star'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -199,7 +209,7 @@ export default function CommentsTab() {
         </div>
 
         {/* Pagination */}
-        {totalComments > 0 && (
+        {totalPages > 1 && (
           <div className="px-6 py-4 flex items-center justify-between border-t border-gray-700">
             <div className="text-sm text-gray-400">
               Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalComments)} of {totalComments} comments
@@ -208,16 +218,18 @@ export default function CommentsTab() {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Previous
+                <ChevronLeftIcon className="h-4 w-4" />
+                <span>Previous</span>
               </button>
               <button
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={currentPage * 10 >= totalComments}
-                className="px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center space-x-2 px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next
+                <span>Next</span>
+                <ChevronRightIcon className="h-4 w-4" />
               </button>
             </div>
           </div>

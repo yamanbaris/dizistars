@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import { getStarNews } from '@/lib/database'
+import { getStar, getStarNews } from '@/lib/database'
+import { toast } from 'sonner'
+import type { TableRow } from '@/types/supabase'
 
 type Star = {
   id: string;
@@ -25,15 +27,15 @@ type NewsArticle = {
   published_at?: string;
   created_at: string;
   updated_at: string;
-  users?: {
+  users: {
     name: string;
-    avatar_url?: string;
+    avatar_url: string | null | undefined;
   };
 };
 
 export default function StarNews() {
   const { id } = useParams()
-  const [star, setStar] = useState<Star | null>(null)
+  const [star, setStar] = useState<TableRow<'stars'> | null>(null)
   const [news, setNews] = useState<NewsArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,24 +50,13 @@ export default function StarNews() {
         const slugId = Array.isArray(id) ? id[0] : id
 
         // Fetch star data first
-        const { data: starData, error: starError } = await createClient()
-          .from('stars')
-          .select('id, full_name, profile_image_url')
-          .eq('slug', slugId)
-          .single()
-
-        if (starError) throw starError
-
+        const starData = await getStar(slugId)
         if (!starData) {
-          setError('Star not found')
+          toast.error('Star not found')
           return
         }
 
-        setStar({
-          id: starData.id,
-          full_name: starData.full_name,
-          profile_image_url: starData.profile_image_url || undefined
-        })
+        setStar(starData)
 
         // Fetch star news
         const newsData = await getStarNews(starData.id)
@@ -76,8 +67,8 @@ export default function StarNews() {
           })))
         }
       } catch (error) {
-        console.error('Error fetching star news:', error)
-        setError('Failed to load news')
+        console.error('Error loading star and news:', error)
+        toast.error('Failed to load star and news data')
       } finally {
         setLoading(false)
       }

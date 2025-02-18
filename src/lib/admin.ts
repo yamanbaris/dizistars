@@ -1,5 +1,5 @@
-import { supabase } from './supabase'
-import type { Tables, TableRow } from './supabase'
+import { supabase } from '@/lib/supabase/client'
+import type { TableRow } from '@/types/supabase'
 
 interface RecentComment {
   id: string
@@ -165,18 +165,6 @@ export async function getUsers(page = 1, limit = 10, query = '') {
 
   if (error) throw error
   return { data, count } as { data: TableRow<'users'>[], count: number }
-}
-
-export async function updateUserStatus(id: string, status: TableRow<'users'>['status']) {
-  const { data, error } = await supabase
-    .from('users')
-    .update({ status })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data as TableRow<'users'>
 }
 
 export async function updateUserRole(id: string, role: TableRow<'users'>['role']) {

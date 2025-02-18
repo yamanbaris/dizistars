@@ -12,12 +12,8 @@ export default function UserFeaturesSection() {
     notifications,
     unreadNotificationsCount,
     markNotificationAsRead,
-    removeFromFavorites,
-    clearNotification
+    removeFromFavorites
   } = useUserFeatures()
-
-  // Filter to only show star favorites
-  const starFavorites = favorites.filter(item => item.type === 'star')
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -33,12 +29,12 @@ export default function UserFeaturesSection() {
           </Link>
         </div>
         <div className="space-y-4">
-          {starFavorites.slice(0, 3).map((item) => (
-            <div key={item.id} className="flex gap-4 group">
+          {favorites.slice(0, 3).map((favorite) => (
+            <div key={favorite.id} className="flex gap-4 group">
               <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                 <Image
-                  src={item.image}
-                  alt={item.title}
+                  src={favorite.stars?.profile_image_url || '/img/star-placeholder.jpeg'}
+                  alt={favorite.stars?.full_name || 'Star'}
                   fill
                   className="object-cover"
                   sizes="80px"
@@ -46,13 +42,13 @@ export default function UserFeaturesSection() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-white group-hover:text-[#C8AA6E] transition-colors line-clamp-2">
-                  {item.title}
+                  {favorite.stars?.full_name}
                 </h4>
                 <span className="text-sm text-white/60 mt-1 block">
                   Turkish Star
                 </span>
                 <button
-                  onClick={() => removeFromFavorites(item.id)}
+                  onClick={() => removeFromFavorites(favorite.star_id)}
                   className="text-sm text-red-500 hover:text-red-400 transition-colors mt-2"
                 >
                   Remove
@@ -60,7 +56,7 @@ export default function UserFeaturesSection() {
               </div>
             </div>
           ))}
-          {starFavorites.length === 0 && (
+          {favorites.length === 0 && (
             <p className="text-white/60 text-sm">No favorite stars yet</p>
           )}
         </div>
@@ -94,15 +90,12 @@ export default function UserFeaturesSection() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h4 className="text-sm font-medium text-white">
-                    {notification.title}
-                  </h4>
                   <p className="text-sm text-white/60 mt-1">
                     {notification.message}
                   </p>
                   <div className="flex items-center gap-4 mt-2">
                     <time className="text-xs text-white/40">
-                      {format(new Date(notification.createdAt), 'MMM d, yyyy')}
+                      {format(new Date(notification.created_at), 'MMM d, yyyy')}
                     </time>
                     {!notification.isRead && (
                       <button
@@ -114,17 +107,12 @@ export default function UserFeaturesSection() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => clearNotification(notification.id)}
-                  className="text-white/40 hover:text-white/60 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             </div>
           ))}
+          {notifications.length === 0 && (
+            <p className="text-white/60 text-sm">No notifications yet</p>
+          )}
         </div>
       </div>
     </div>

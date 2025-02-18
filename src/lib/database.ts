@@ -253,8 +253,8 @@ export const favoritesApi = {
         *,
         stars!favorites_star_id_fkey(
           id,
-          name,
-          image_url
+          full_name,
+          profile_image_url
         )
       `)
       .eq('user_id', userId);
@@ -271,8 +271,8 @@ export const favoritesApi = {
         *,
         stars!favorites_star_id_fkey(
           id,
-          name,
-          image_url
+          full_name,
+          profile_image_url
         )
       `)
       .single();
@@ -481,3 +481,33 @@ export const getStarNews = async (star_id: string) => {
     return [];
   }
 };
+
+// Direct function exports
+export const {
+  getById: getStar,
+  create: createStar,
+  update: updateStar,
+  delete: deleteStar,
+  getList: getStars
+} = starsApi;
+
+export const {
+  getList: getNews,
+  create: createNews,
+  update: updateNews,
+  delete: deleteNews
+} = newsApi;
+
+export const {
+  getList: getComments,
+  create: createComment,
+  update: updateComment,
+  delete: deleteComment
+} = commentsApi;
+
+export const {
+  getByUser: getFavorites,
+  add: addFavorite,
+  remove: removeFavorite,
+  exists: favoriteExists
+} = favoritesApi;

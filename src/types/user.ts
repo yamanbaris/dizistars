@@ -1,19 +1,19 @@
-export interface UserFavorite {
-  id: string
-  type: 'star' | 'series' | 'movie'
-  title: string
-  image: string
-  addedAt: string
+import type { TableRow } from './supabase'
+
+export type UserFavorite = TableRow<'favorites'>
+
+export interface UserFeatures {
+  favorites: UserFavorite[]
 }
 
 export interface UserNotification {
   id: string
-  type: 'comment' | 'like' | 'follow' | 'system' | 'news'
-  title: string
+  user_id: string
   message: string
-  link: string
   isRead: boolean
-  createdAt: string
+  created_at: string
+  type: 'system' | 'favorite' | 'comment'
+  related_id?: string
 }
 
 export interface UserComment {
@@ -29,14 +29,12 @@ export interface UserComment {
 }
 
 export interface UserRating {
-  id: string
-  userId: string
-  targetType: 'series' | 'movie'
-  targetId: string
-  rating: number
-  review?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  user_id: string;
+  star_id: string;
+  rating: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserPreferences {

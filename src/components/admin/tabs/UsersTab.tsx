@@ -9,13 +9,18 @@ import {
   TrashIcon, 
   MagnifyingGlassIcon 
 } from '@heroicons/react/24/outline';
-import { getUsers, updateUserStatus, updateUserRole } from '@/lib/admin';
+import { getUsers, updateUserRole } from '@/lib/admin';
 import type { TableRow } from '@/types/supabase';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/auth/AuthContext';
 
 type User = TableRow<'users'>;
+
+const roleOptions = [
+  { value: 'user', label: 'User' },
+  { value: 'admin', label: 'Admin' }
+];
 
 export default function UsersTab() {
   const [users, setUsers] = useState<User[]>([]);
@@ -169,9 +174,11 @@ export default function UsersTab() {
                         onChange={(e) => handleRoleChange(user.id, e.target.value as User['role'])}
                         className="bg-transparent border border-gray-700 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="user">User</option>
-                        <option value="editor">Editor</option>
-                        <option value="admin">Admin</option>
+                        {roleOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">

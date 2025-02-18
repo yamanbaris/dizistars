@@ -1,4 +1,4 @@
-import { NewsArticle, NewsCategory } from '@/types/news'
+import { NewsArticle, NewsCategory, NewsFilter } from '@/types/news'
 
 export const newsArticles: NewsArticle[] = [
   {
@@ -164,8 +164,8 @@ export const filterArticles = (filters: NewsFilter): NewsArticle[] => {
     filtered = filtered.filter(article => article.category === filters.category)
   }
 
-  if (filters.tag) {
-    filtered = filtered.filter(article => article.tags.includes(filters.tag))
+  if (filters.tag && filters.tag.length > 0) {
+    filtered = filtered.filter(article => article.tags.includes(filters.tag!))
   }
 
   if (filters.search) {

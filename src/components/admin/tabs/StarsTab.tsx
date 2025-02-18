@@ -20,26 +20,20 @@ type DatabaseStar = TableRow<'stars'>;
 type Star = {
   id: string;
   name: string;
-  type: 'actor' | 'actress';
-  birth_date: string;
-  birth_place: string;
-  biography: string;
-  education: string;
-  current_project?: string;
+  type: string;
+  birth_date: string | null;
+  birth_place: string | null;
+  biography: string | null;
+  education: string | null;
+  current_project: string | null;
   is_featured: boolean;
   is_trending: boolean;
   is_rising: boolean;
   is_influential: boolean;
   profile_image: string;
-  cover_image?: string;
-  filmography: {
-    title: string;
-    role: string;
-    year: number;
-    streaming_on?: string;
-  }[];
-  gallery_images: string[];
-  slug: string;
+  cover_image: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 // Convert database star to display type
@@ -59,9 +53,8 @@ function convertDatabaseStar(dbStar: DatabaseStar): Star {
     is_influential: dbStar.is_influential,
     profile_image: dbStar.profile_image_url || '/img/star-placeholder.jpeg',
     cover_image: dbStar.cover_image_url,
-    filmography: dbStar.filmography || [],
-    gallery_images: dbStar.gallery_images || [],
-    slug: dbStar.slug
+    created_at: dbStar.created_at,
+    updated_at: dbStar.updated_at
   };
 }
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useAuth } from '@/app/auth/AuthContext'
 
 interface SearchResult {
   id: string
@@ -15,6 +16,7 @@ interface SearchResult {
 }
 
 export default function Navbar() {
+  const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -107,6 +109,15 @@ export default function Navbar() {
     const query = e.target.value
     setSearchQuery(query)
     performSearch(query)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (
@@ -223,18 +234,37 @@ export default function Navbar() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Link 
-              href="/login"
-              className="px-6 py-2 text-white/90 hover:text-primary transition-colors"
-            >
-              Login
-            </Link>
-            <Link 
-              href="/signup"
-              className="px-6 py-2 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-full"
-            >
-              Sign up
-            </Link>
+            {user ? (
+              <>
+                <Link 
+                  href="/profile"
+                  className="px-6 py-2 text-white/90 hover:text-primary transition-colors"
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-6 py-2 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-full"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/login"
+                  className="px-6 py-2 text-white/90 hover:text-primary transition-colors"
+                >
+                  Login
+                </Link>
+                <Link 
+                  href="/signup"
+                  className="px-6 py-2 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-full"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -330,20 +360,43 @@ export default function Navbar() {
 
               {/* Mobile Auth Buttons */}
               <div className="flex flex-col gap-2 pt-2 pb-4">
-                <Link
-                  href="/login"
-                  className="px-4 py-3 text-white/90 hover:text-primary transition-colors rounded-lg hover:bg-white/5 text-center"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-4 py-3 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-lg text-center"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign up
-                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="px-4 py-3 text-white/90 hover:text-primary transition-colors rounded-lg hover:bg-white/5 text-center"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="px-4 py-3 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-lg text-center"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="px-4 py-3 text-white/90 hover:text-primary transition-colors rounded-lg hover:bg-white/5 text-center"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="px-4 py-3 text-dark font-medium bg-primary hover:bg-primary/90 transition-colors rounded-lg text-center"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign up
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.div>
           )}

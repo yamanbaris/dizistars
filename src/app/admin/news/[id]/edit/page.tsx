@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation';
 import ArticleForm from '@/components/admin/forms/ArticleForm';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { NewsImageUpload } from '@/components/admin/forms/NewsImageUpload';
+import { useState } from 'react';
+import { Toaster } from 'sonner';
 
 // This would typically come from an API call
 const mockArticleData = {
@@ -19,6 +22,7 @@ const mockArticleData = {
 export default function EditArticlePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { id } = params;
+  const [imageUrl, setImageUrl] = useState<string>(''); // Load current image URL from your data
 
   const handleSubmit = (data: any) => {
     // Here you would typically make an API call to update the article
@@ -49,6 +53,20 @@ export default function EditArticlePage({ params }: { params: { id: string } }) 
             </p>
           </div>
           <div className="px-4 py-5 sm:p-6">
+            <Toaster />
+            <h1 className="text-2xl font-bold mb-6">Edit News Article</h1>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">
+                Featured Image
+              </label>
+              <NewsImageUpload
+                newsId={id}
+                currentImageUrl={imageUrl}
+                onUpdate={setImageUrl}
+              />
+            </div>
+            
             <ArticleForm
               initialData={mockArticleData}
               onSubmit={handleSubmit}

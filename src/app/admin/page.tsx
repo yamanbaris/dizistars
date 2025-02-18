@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   UserGroupIcon, 
   NewspaperIcon, 
@@ -14,11 +14,15 @@ import {
 } from '@heroicons/react/24/outline';
 import DashboardCard from '@/components/admin/DashboardCard';
 import DashboardStats from '@/components/admin/DashboardStats';
+import RecentActivity from '@/components/admin/RecentActivity';
 import UsersTab from '@/components/admin/tabs/UsersTab';
 import StarsTab from '@/components/admin/tabs/StarsTab';
 import NewsTab from '@/components/admin/tabs/NewsTab';
 import CommentsTab from '@/components/admin/tabs/CommentsTab';
 import ModerationTab from '@/components/admin/tabs/ModerationTab';
+import { getDashboardStats, getRecentActivity } from '@/lib/admin';
+import type { Activity } from '@/components/admin/RecentActivity';
+import { toast } from 'sonner';
 
 const tabs = [
   { name: 'Overview', icon: ChartBarIcon },
@@ -30,14 +34,38 @@ const tabs = [
 ];
 
 export default function AdminDashboard() {
-  const [stats] = useState({
-    users: 1234,
-    stars: 156,
-    news: 89,
-    comments: 450
+  const [stats, setStats] = useState({
+    users: 0,
+    stars: 0,
+    news: 0,
+    comments: 0
   });
-
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState('Overview');
+
+  useEffect(() => {
+    if (currentTab === 'Overview') {
+      loadDashboardData();
+    }
+  }, [currentTab]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [statsData, activitiesData] = await Promise.all([
+        getDashboardStats(),
+        getRecentActivity(10)
+      ]);
+      setStats(statsData);
+      setActivities(activitiesData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderTabContent = () => {
     switch (currentTab) {
@@ -60,44 +88,38 @@ export default function AdminDashboard() {
                 title="Total Users"
                 value={stats.users}
                 icon={UserGroupIcon}
-                trend="+12%"
-                trendDirection="up"
+                loading={loading}
               />
               <DashboardStats
                 title="Stars"
                 value={stats.stars}
                 icon={StarIcon}
-                trend="+5%"
-                trendDirection="up"
+                loading={loading}
               />
               <DashboardStats
                 title="News Articles"
                 value={stats.news}
                 icon={NewspaperIcon}
-                trend="+8%"
-                trendDirection="up"
+                loading={loading}
               />
               <DashboardStats
                 title="Comments"
                 value={stats.comments}
                 icon={ChartBarIcon}
-                trend="+15%"
-                trendDirection="up"
+                loading={loading}
               />
             </div>
 
-            {/* Main Content Cards */}
+            {/* Recent Activity */}
             <div className="space-y-8">
-              <DashboardCard title="Recent Users">
-                <div className="p-4">
-                  <p className="text-gray-400">User list component will be implemented here</p>
-                </div>
-              </DashboardCard>
-              
-              <DashboardCard title="Latest Content">
-                <div className="p-4">
-                  <p className="text-gray-400">Content list component will be implemented here</p>
-                </div>
+              <DashboardCard title="Recent Activity">
+                {loading ? (
+                  <div className="flex justify-center items-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                  </div>
+                ) : (
+                  <RecentActivity activities={activities} />
+                )}
               </DashboardCard>
             </div>
           </>

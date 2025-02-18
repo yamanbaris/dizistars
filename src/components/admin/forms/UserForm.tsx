@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 
-interface UserFormData {
+export interface UserFormData {
   name: string;
   email: string;
-  role: 'User' | 'Admin' | 'Editor';
-  status: 'Active' | 'Inactive' | 'Suspended';
+  role: 'user' | 'admin' | 'editor';
+  avatar_url?: string;
   password?: string;
   confirmPassword?: string;
 }
@@ -22,8 +22,8 @@ export default function UserForm({ initialData, onSubmit, onCancel, isEdit = fal
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     email: '',
-    role: 'User',
-    status: 'Active'
+    role: 'user',
+    avatar_url: ''
   });
   const [showPasswordFields, setShowPasswordFields] = useState(!isEdit);
   const [passwordError, setPasswordError] = useState('');
@@ -98,6 +98,33 @@ export default function UserForm({ initialData, onSubmit, onCancel, isEdit = fal
       </div>
 
       <div>
+        <label htmlFor="avatar_url" className="block text-sm font-medium text-gray-200">
+          Avatar URL
+        </label>
+        <input
+          type="text"
+          id="avatar_url"
+          value={formData.avatar_url || ''}
+          onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2"
+          placeholder="https://example.com/avatar.jpg"
+        />
+        {formData.avatar_url && (
+          <div className="mt-2">
+            <img 
+              src={formData.avatar_url} 
+              alt="Avatar preview" 
+              className="h-16 w-16 rounded-full object-cover"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.src = '/img/star-placeholder.jpeg';
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div>
         <label htmlFor="role" className="block text-sm font-medium text-gray-200">
           Role
         </label>
@@ -107,25 +134,9 @@ export default function UserForm({ initialData, onSubmit, onCancel, isEdit = fal
           onChange={(e) => setFormData({ ...formData, role: e.target.value as UserFormData['role'] })}
           className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2"
         >
-          <option value="User">User</option>
-          <option value="Admin">Admin</option>
-          <option value="Editor">Editor</option>
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-200">
-          Status
-        </label>
-        <select
-          id="status"
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value as UserFormData['status'] })}
-          className="mt-1 block w-full rounded-md border border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2"
-        >
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Suspended">Suspended</option>
+          <option value="user">User</option>
+          <option value="editor">Editor</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
 

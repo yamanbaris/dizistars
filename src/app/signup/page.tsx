@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../auth/AuthContext'
+import { useRouter } from 'next/navigation'
 
 interface SignupFormData {
   name: string
@@ -12,7 +13,8 @@ interface SignupFormData {
 }
 
 export default function SignupPage() {
-  const { signup, error, loading, clearError } = useAuth()
+  const { signup, error, loading, clearError, user } = useAuth()
+  const router = useRouter()
   const [formData, setFormData] = useState<SignupFormData>({
     name: '',
     email: '',
@@ -24,7 +26,11 @@ export default function SignupPage() {
   useEffect(() => {
     // Clear any existing errors when component mounts
     clearError()
-  }, [clearError])
+    // Redirect if already logged in
+    if (user) {
+      router.push('/profile')
+    }
+  }, [clearError, user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -32,12 +38,15 @@ export default function SignupPage() {
       ...prev,
       [name]: value
     }))
+    // Clear validation error when user starts typing
+    setValidationError('')
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setValidationError('')
 
+    // Validate password
     if (formData.password !== formData.confirmPassword) {
       setValidationError('Passwords do not match')
       return
@@ -48,8 +57,22 @@ export default function SignupPage() {
       return
     }
 
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setValidationError('Please enter a valid email address')
+      return
+    }
+
+    // Validate name
+    if (formData.name.trim().length < 2) {
+      setValidationError('Name must be at least 2 characters long')
+      return
+    }
+
     try {
       await signup(formData.name, formData.email, formData.password)
+      // Redirect is handled in the auth context
     } catch (err) {
       // Error is handled by auth context
       console.error('Signup failed:', err)

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useAuth } from '../auth/AuthContext'
+import { useRouter } from 'next/navigation'
 
 interface LoginFormData {
   email: string
@@ -12,6 +12,7 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const { login, error, loading, clearError, user } = useAuth()
+  const router = useRouter()
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
@@ -20,7 +21,11 @@ export default function LoginPage() {
   useEffect(() => {
     // Clear any existing errors when component mounts
     clearError()
-  }, [clearError])
+    // Redirect if already logged in
+    if (user) {
+      router.push('/profile')
+    }
+  }, [clearError, user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -32,8 +37,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      return
+    }
+
     try {
       await login(formData.email, formData.password)
+      // Redirect is handled in the auth context
     } catch (err) {
       // Error is handled by auth context
       console.error('Login failed:', err)
@@ -41,132 +54,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#101114] flex items-center justify-center px-4 pt-28">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-[#101114] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-[#1E1E1E] p-8 rounded-xl">
         <div>
-          <h2 className="text-3xl font-bold text-white flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#C8AA6E]"></span>
-            Log In
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            Sign in to your account
           </h2>
-          <p className="mt-2 text-sm text-white/60">
-            Welcome back! Please enter your details
-          </p>
         </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="text-red-500 text-sm text-center bg-red-500/10 py-2 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="email" className="text-sm font-medium text-white/80">
-                Email
+              <label htmlFor="email" className="sr-only">
+                Email address
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 w-full px-4 py-3 bg-[#1E1E1E] rounded-lg text-white placeholder-white/40 border border-white/10 focus:ring-2 focus:ring-[#C8AA6E] focus:border-transparent transition-colors"
-                placeholder="Enter your email"
-                disabled={loading}
+                className="appearance-none relative block w-full px-4 py-3 border border-white/10 bg-[#101114] placeholder-white/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C8AA6E] focus:border-transparent"
+                placeholder="Email address"
               />
             </div>
-
             <div>
-              <label htmlFor="password" className="text-sm font-medium text-white/80">
+              <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <input
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 w-full px-4 py-3 bg-[#1E1E1E] rounded-lg text-white placeholder-white/40 border border-white/10 focus:ring-2 focus:ring-[#C8AA6E] focus:border-transparent transition-colors"
-                placeholder="Enter your password"
-                disabled={loading}
+                className="appearance-none relative block w-full px-4 py-3 border border-white/10 bg-[#101114] placeholder-white/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C8AA6E] focus:border-transparent"
+                placeholder="Password"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-white/10 bg-[#1E1E1E] text-[#C8AA6E] focus:ring-[#C8AA6E]"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-white/60">
-                Remember me
-              </label>
+          {error && (
+            <div className="text-red-500 text-sm text-center">
+              {error}
             </div>
+          )}
 
-            <div className="text-sm">
-              <Link href="/forgot-password" className="text-[#C8AA6E] hover:text-[#D4B87A] transition-colors">
-                Forgot password?
-              </Link>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-3 bg-[#C8AA6E] text-black rounded-lg text-sm font-medium hover:bg-[#D4B87A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-[#101114] text-white/60">Or Continue With</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div>
             <button
-              type="button"
+              type="submit"
               disabled={loading}
-              className="flex items-center justify-center px-4 py-2 border border-white/10 rounded-lg text-white/80 hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-black bg-[#C8AA6E] hover:bg-[#D4B87A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#C8AA6E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Image
-                src="/img/platforms/google.png"
-                alt="Google"
-                width={20}
-                height={20}
-                className="mr-2"
-              />
-              Google
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              className="flex items-center justify-center px-4 py-2 border border-white/10 rounded-lg text-white/80 hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Image
-                src="/img/platforms/facebook.png"
-                alt="Facebook"
-                width={20}
-                height={20}
-                className="mr-2"
-              />
-              Facebook
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
 

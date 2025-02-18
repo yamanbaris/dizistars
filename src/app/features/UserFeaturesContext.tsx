@@ -1,5 +1,7 @@
 'use client'
 
+/* cSpell:words sonner Supabase */
+
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import {
@@ -9,11 +11,25 @@ import {
   UserRating,
   UserPreferences
 } from '@/types/user'
+import * as db from '@/lib/database'
+import type { TableRow } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+interface FavoriteWithStar {
+  id: string;
+  created_at: string;
+  star_id: string;
+  star: {
+    id: string;
+    name: string;
+    image_url: string;
+  } | null;
+}
 
 interface UserFeaturesContextType {
   // Favorites (stars only)
   favorites: UserFavorite[]
-  addToFavorites: (star: { title: string; image: string }) => Promise<void>
+  addToFavorites: (star: { id: string; title: string; image: string }) => Promise<void>
   removeFromFavorites: (id: string) => Promise<void>
 
   // Notifications
@@ -24,8 +40,9 @@ interface UserFeaturesContextType {
   clearNotification: (id: string) => Promise<void>
 
   // Comments & Ratings
-  addComment: (comment: Omit<UserComment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>
+  addComment: (comment: Omit<UserComment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<TableRow<'comments'> | undefined>
   deleteComment: (id: string) => Promise<void>
+  updateCommentStatus: (id: string, status: 'approved' | 'rejected') => Promise<TableRow<'comments'> | undefined>
   addRating: (rating: Omit<UserRating, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>
   updateRating: (id: string, rating: number, review?: string) => Promise<void>
 
@@ -52,7 +69,6 @@ export function UserFeaturesProvider({ children }: { children: React.ReactNode }
     showOnlineStatus: true
   })
 
-  // Load user data when authenticated
   useEffect(() => {
     if (user) {
       loadUserData()
@@ -60,184 +76,188 @@ export function UserFeaturesProvider({ children }: { children: React.ReactNode }
   }, [user])
 
   const loadUserData = async () => {
-    try {
-      // TODO: Replace with actual API calls
-      // Simulated data loading
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock data - only star favorites
-      setFavorites([
-        {
-          id: '1',
-          type: 'star',
-          title: 'Burak Özçivit',
-          image: '/img/stars/burak-ozcivit.jpg',
-          addedAt: new Date().toISOString()
-        },
-        {
-          id: '2',
-          type: 'star',
-          title: 'Çağatay Ulusoy',
-          image: '/img/stars/cagatay-ulusoy.jpg',
-          addedAt: new Date().toISOString()
-        }
-      ])
+    if (!user) return
 
-      setNotifications([
-        {
-          id: '1',
-          type: 'comment',
-          title: 'New Comment',
-          message: 'Someone replied to your comment',
-          link: '/news/article-1#comment-1',
-          isRead: false,
-          createdAt: new Date().toISOString()
-        }
-      ])
+    try {
+      // Load favorites
+      const userFavorites = await db.getFavorites(user.id) as FavoriteWithStar[]
+      setFavorites(userFavorites.map((f) => ({
+        id: f.id,
+        type: 'star' as const,
+        title: f.star?.name || '',
+        image: f.star?.image_url || '',
+        addedAt: f.created_at
+      })))
+
+      // Load notifications (to be implemented)
+      // Load preferences (to be implemented)
     } catch (error) {
       console.error('Error loading user data:', error)
+      toast.error('Failed to load user data')
     }
   }
 
-  // Favorites functions - only for stars
-  const addToFavorites = async (star: { title: string; image: string }) => {
+  const addToFavorites = async (star: { id: string; title: string; image: string }) => {
+    if (!user) {
+      toast.error('Please log in to add favorites')
+      return
+    }
+
     try {
-      const newFavorite: UserFavorite = {
-        ...star,
-        id: Date.now().toString(),
+      const favorite = await db.addFavorite(user.id, star.id)
+      setFavorites(prev => [...prev, {
+        id: favorite.id,
         type: 'star',
-        addedAt: new Date().toISOString()
-      }
-      setFavorites(prev => [...prev, newFavorite])
+        title: star.title,
+        image: star.image,
+        addedAt: favorite.created_at
+      }])
+      toast.success('Added to favorites')
     } catch (error) {
-      console.error('Error adding to favorites:', error)
-      throw error
+      console.error('Error adding favorite:', error)
+      toast.error('Failed to add to favorites')
     }
   }
 
-  const removeFromFavorites = async (id: string) => {
+  const removeFromFavorites = async (starId: string) => {
+    if (!user) return
+
     try {
-      setFavorites(prev => prev.filter(item => item.id !== id))
+      await db.removeFavorite(user.id, starId)
+      setFavorites(prev => prev.filter(f => f.id !== starId))
+      toast.success('Removed from favorites')
     } catch (error) {
-      console.error('Error removing from favorites:', error)
-      throw error
+      console.error('Error removing favorite:', error)
+      toast.error('Failed to remove from favorites')
     }
   }
 
-  // Notifications functions
-  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length
-
-  const markNotificationAsRead = async (id: string) => {
-    try {
-      // TODO: Replace with actual API call
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === id ? { ...notification, isRead: true } : notification
-        )
-      )
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-      throw error
-    }
-  }
-
-  const markAllNotificationsAsRead = async () => {
-    try {
-      // TODO: Replace with actual API call
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isRead: true }))
-      )
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-      throw error
-    }
-  }
-
-  const clearNotification = async (id: string) => {
-    try {
-      // TODO: Replace with actual API call
-      setNotifications(prev => prev.filter(notification => notification.id !== id))
-    } catch (error) {
-      console.error('Error clearing notification:', error)
-      throw error
-    }
-  }
-
-  // Comments & Ratings functions
   const addComment = async (comment: Omit<UserComment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      // TODO: Replace with actual API call
-      // Implementation will be added when integrating with backend
-      console.log('Adding comment:', comment)
-    } catch (error) {
-      console.error('Error adding comment:', error)
-      throw error
+    if (!user) {
+      toast.error('Please log in to comment');
+      return;
     }
-  }
+
+    try {
+      const newComment = await db.createComment({
+        user_id: user.id,
+        target_type: comment.targetType === 'series' ? 'star' : comment.targetType,
+        target_id: comment.targetId,
+        content: comment.content,
+        status: 'pending'
+      });
+
+      toast.success('Comment submitted for review');
+      return newComment;
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
+      throw error;
+    }
+  };
 
   const deleteComment = async (id: string) => {
+    if (!user) return;
+
     try {
-      // TODO: Replace with actual API call
-      // Implementation will be added when integrating with backend
-      console.log('Deleting comment:', id)
+      await db.deleteComment(id);
+      toast.success('Comment deleted');
     } catch (error) {
-      console.error('Error deleting comment:', error)
-      throw error
+      console.error('Error deleting comment:', error);
+      toast.error('Failed to delete comment');
+      throw error;
     }
-  }
+  };
+
+  const updateCommentStatus = async (id: string, status: 'approved' | 'rejected') => {
+    if (!user) return;
+
+    try {
+      const updatedComment = await db.updateComment(id, { status });
+      toast.success(`Comment ${status}`);
+      return updatedComment;
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast.error('Failed to update comment');
+      throw error;
+    }
+  };
 
   const addRating = async (rating: Omit<UserRating, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) {
+      toast.error('Please log in to rate')
+      return
+    }
+
     try {
-      // TODO: Replace with actual API call
-      // Implementation will be added when integrating with backend
-      console.log('Adding rating:', rating)
+      await db.createOrUpdateRating({
+        user_id: user.id,
+        star_id: rating.targetId,
+        rating: rating.rating,
+        review: rating.review
+      })
+      toast.success('Rating added')
     } catch (error) {
       console.error('Error adding rating:', error)
-      throw error
+      toast.error('Failed to add rating')
     }
   }
 
   const updateRating = async (id: string, rating: number, review?: string) => {
+    if (!user) return
+
     try {
-      // TODO: Replace with actual API call
-      // Implementation will be added when integrating with backend
-      console.log('Updating rating:', { id, rating, review })
+      await db.createOrUpdateRating({
+        user_id: user.id,
+        star_id: id,
+        rating,
+        review
+      })
+      toast.success('Rating updated')
     } catch (error) {
       console.error('Error updating rating:', error)
-      throw error
+      toast.error('Failed to update rating')
     }
   }
 
-  // Preferences functions
+  // Notification functions (to be implemented with real-time subscriptions)
+  const markNotificationAsRead = async (id: string) => {
+    // TODO: Implement with Supabase real-time
+  }
+
+  const markAllNotificationsAsRead = async () => {
+    // TODO: Implement with Supabase real-time
+  }
+
+  const clearNotification = async (id: string) => {
+    // TODO: Implement with Supabase real-time
+  }
+
+  // Preferences functions (to be implemented)
   const updatePreferences = async (newPreferences: Partial<UserPreferences>) => {
-    try {
-      // TODO: Replace with actual API call
-      setPreferences(prev => ({ ...prev, ...newPreferences }))
-    } catch (error) {
-      console.error('Error updating preferences:', error)
-      throw error
-    }
+    // TODO: Implement preferences in database
+  }
+
+  const value = {
+    favorites,
+    addToFavorites,
+    removeFromFavorites,
+    notifications,
+    unreadNotificationsCount: notifications.filter(n => !n.isRead).length,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    clearNotification,
+    addComment,
+    deleteComment,
+    updateCommentStatus,
+    addRating,
+    updateRating,
+    preferences,
+    updatePreferences,
   }
 
   return (
-    <UserFeaturesContext.Provider
-      value={{
-        favorites,
-        addToFavorites,
-        removeFromFavorites,
-        notifications,
-        unreadNotificationsCount,
-        markNotificationAsRead,
-        markAllNotificationsAsRead,
-        clearNotification,
-        addComment,
-        deleteComment,
-        addRating,
-        updateRating,
-        preferences,
-        updatePreferences
-      }}
-    >
+    <UserFeaturesContext.Provider value={value}>
       {children}
     </UserFeaturesContext.Provider>
   )

@@ -1,76 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+/* cSpell:words supabase sonner */
+
+import { useState, useEffect } from 'react';
 import DashboardCard from '../DashboardCard';
 import { 
-  CheckIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  FlagIcon
+  CheckCircleIcon,
+  XCircleIcon,
+  MagnifyingGlassIcon 
 } from '@heroicons/react/24/outline';
+import { getComments, updateComment } from '@/lib/database';
+import type { TableRow } from '@/lib/supabase';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
-const mockComments = [
-  { 
-    id: 1, 
-    user: 'John Doe', 
-    content: 'Great performance in the latest series!',
-    target: 'Çağatay Ulusoy Profile',
-    status: 'Pending',
-    reported: true,
-    date: '2024-02-15'
-  },
-  { 
-    id: 2, 
-    user: 'Jane Smith', 
-    content: 'Looking forward to the next episode!',
-    target: 'Latest News Article',
-    status: 'Approved',
-    reported: false,
-    date: '2024-02-14'
-  },
-];
+type Comment = TableRow<'comments'>;
 
 export default function CommentsTab() {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [totalComments, setTotalComments] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<'all' | 'pending' | 'reported'>('all');
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+
+  const loadComments = async () => {
+    try {
+      setLoading(true);
+      const { data, count } = await getComments(
+        undefined,
+        undefined,
+        currentPage,
+        10,
+        filter === 'all' ? undefined : filter
+      );
+      setComments(data);
+      setTotalComments(count);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      toast.error('Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadComments();
+  }, [currentPage, filter]);
+
+  const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateComment(id, { status });
+      await loadComments();
+      toast.success(`Comment ${status}`);
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast.error('Failed to update comment');
+    }
+  };
+
+  const filteredComments = comments.filter(comment => {
+    if (filter !== 'all' && comment.status !== filter) return false;
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        comment.content.toLowerCase().includes(searchLower) ||
+        comment.users?.name?.toLowerCase().includes(searchLower)
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg ${
-              filter === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-lg ${
-              filter === 'pending'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setFilter('reported')}
-            className={`px-4 py-2 rounded-lg ${
-              filter === 'reported'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            Reported
-          </button>
-        </div>
-        <div className="relative">
+      {/* Search and Filter */}
+      <div className="flex items-center justify-between">
+        <div className="relative flex-1 max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
           </div>
@@ -81,6 +86,18 @@ export default function CommentsTab() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div className="ml-4">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as typeof filter)}
+            className="block w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-800 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="all">All Comments</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
       </div>
 
@@ -93,10 +110,10 @@ export default function CommentsTab() {
                   User
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Comment
+                  Content
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  On
+                  Target
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Status
@@ -110,51 +127,101 @@ export default function CommentsTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {mockComments.map((comment) => (
-                <tr key={comment.id} className="hover:bg-gray-750">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                    {comment.user}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-200">
-                    <div className="max-w-xs truncate">
-                      {comment.content}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                    {comment.target}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        comment.status === 'Approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {comment.status}
-                      </span>
-                      {comment.reported && (
-                        <FlagIcon className="h-5 w-5 ml-2 text-red-400" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
-                    {comment.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-3">
-                      <button className="text-green-400 hover:text-green-300">
-                        <CheckIcon className="h-5 w-5" />
-                      </button>
-                      <button className="text-red-400 hover:text-red-300">
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredComments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
+                    No comments found
+                  </td>
+                </tr>
+              ) : (
+                filteredComments.map((comment) => (
+                  <tr key={comment.id} className="hover:bg-gray-750">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                      {comment.users?.name || 'Unknown User'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-200">
+                      <div className="max-w-md truncate">
+                        {comment.content}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                      {comment.target_type} #{comment.target_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        comment.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : comment.status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {comment.status.charAt(0).toUpperCase() + comment.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                      {format(new Date(comment.created_at), 'MMM d, yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-3">
+                        {comment.status === 'pending' && (
+                          <>
+                            <button 
+                              onClick={() => handleUpdateStatus(comment.id, 'approved')}
+                              className="text-green-400 hover:text-green-300"
+                              title="Approve"
+                            >
+                              <CheckCircleIcon className="h-5 w-5" />
+                            </button>
+                            <button 
+                              onClick={() => handleUpdateStatus(comment.id, 'rejected')}
+                              className="text-red-400 hover:text-red-300"
+                              title="Reject"
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalComments > 0 && (
+          <div className="px-6 py-4 flex items-center justify-between border-t border-gray-700">
+            <div className="text-sm text-gray-400">
+              Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalComments)} of {totalComments} comments
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => p + 1)}
+                disabled={currentPage * 10 >= totalComments}
+                className="px-3 py-1 rounded bg-gray-800 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </DashboardCard>
     </div>
   );

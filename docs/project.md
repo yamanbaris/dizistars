@@ -10,8 +10,8 @@ DiziStars is a comprehensive platform dedicated to Turkish entertainment, provid
 - **State Management**: React Context + Hooks
 - **Image Optimization**: Next.js Image Component
 - **Icons**: Heroicons
-- **Authentication**: Custom Auth System with JWT (to be connected)
-- **Database**: (To be implemented)
+- **Authentication**: Supabase Auth
+- **Database**: Supabase (PostgreSQL)
 
 ## Features
 
@@ -32,13 +32,15 @@ DiziStars is a comprehensive platform dedicated to Turkish entertainment, provid
   - Animated transitions
   - Loading states
   - Responsive design
-- [x] Authentication System
-  - User registration with validation
-  - Login functionality
+- [x] Authentication System with Supabase
+  - User registration with email validation
+  - Login with email/password
   - Password recovery flow
-  - Profile management
+  - Profile management with avatar
   - Protected routes
-  - Session handling
+  - Session handling with Supabase
+  - User metadata storage
+  - Role-based authorization
 - [x] News Section
   - Featured news grid layout
   - News detail pages with hero images
@@ -94,10 +96,7 @@ DiziStars is a comprehensive platform dedicated to Turkish entertainment, provid
 
 ### Pending Features
 - [ ] Backend Integration
-  - API endpoints implementation
-  - Database schema design
-  - File storage system
-  - Authentication system connection
+  - Additional API endpoints implementation
 - [ ] Enhanced Features
   - Rich text editor for articles
   - Advanced image management
@@ -169,8 +168,8 @@ src/
 - [x] User management
 - [x] Content management
 - [x] Moderation tools
-- [ ] Backend integration
-- [ ] File storage system
+- [x] Backend integration with Supabase
+- [x] File storage system with Supabase Storage
 - [ ] Analytics implementation
 
 ### Phase 5: Performance & SEO (Pending)
